@@ -1,0 +1,10 @@
+language: csharp
+mono:
+    - latest
+script:
+    - ./build.sh
+os:
+    - linux
+cache:
+  directories:
+    - tools
