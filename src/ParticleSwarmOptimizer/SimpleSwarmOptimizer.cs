@@ -11,19 +11,27 @@ namespace ParticleSwarmOptimizer
         private readonly Function _function;
         private readonly IEnumerable<Particle> _particles;
         private readonly Random _random;
-        private readonly OptimizerSettings _settings;
 
         public SimpleSwarmOptimizer(Function function, OptimizerSettings settings)
         {
             _random = new Random();
             _function = function;
-            _settings = settings;
 
-            _particles = Enumerable.Range(0, _settings.ParticleCount).Select(_ => BuildSingleParticle());
+            Omega = settings.Omega;
+            PhiGlobal = settings.PhiGlobal;
+            PhiPersonal = settings.PhiPersonal;
+
+            _particles = Enumerable.Range(0, settings.ParticleCount).Select(_ => BuildSingleParticle());
 
             GlobalBestPosition = _particles.OrderBy(particle => particle.CurrentValue).First().CurrentPosition;
             GlobalBestValue = _function.GetValue(GlobalBestPosition);
         }
+
+        private double PhiPersonal { get; }
+
+        private double PhiGlobal { get; }
+
+        private double Omega { get; }
 
         private double GlobalBestValue { get; set; }
 
@@ -39,7 +47,7 @@ namespace ParticleSwarmOptimizer
                 var globalBestGravity = _random.NextDouble()*(GlobalBestPosition -
                                                               particle.CurrentPosition);
 
-                var newVelocity = currentVelocity + ownBestGravity + globalBestGravity;
+                var newVelocity = Omega*currentVelocity + PhiPersonal*ownBestGravity + PhiGlobal*globalBestGravity;
 
                 particle.Velocity = newVelocity;
 
