@@ -9,7 +9,7 @@
         public double PhiPersonal { get; } = 1.5;
         public double PhiGlobal { get; } = 1.5;
 
-        public double SearchSpaceMax { get; } = 100;
-        public double SearchSpaceMin { get; } = -100;
+        public double SearchSpaceMax { get; set; } = 100;
+        public double SearchSpaceMin { get; set; } = -100;
     }
 }

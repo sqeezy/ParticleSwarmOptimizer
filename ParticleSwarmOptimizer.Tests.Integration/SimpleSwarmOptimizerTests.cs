@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using Xunit;
+﻿using Xunit;
 
 namespace ParticleSwarmOptimizer.Tests.Integration
 {
@@ -19,13 +14,27 @@ namespace ParticleSwarmOptimizer.Tests.Integration
         {
             OptimiterSettings = new OptimizerSettings();
 
-            Function = new Function(vector => vector[0]*vector[0],1);
+            Function = new Function(vector => vector[0]*vector[0], 1);
 
             WhenSutIsCreated();
             WhenOpimizeIsCalled();
 
-            Assert.True(Result.OptimumValue<1e-5,$"The value is {Result.OptimumValue}.");
+            Assert.True(Result.OptimumValue < 1e-5, $"The value is {Result.OptimumValue}.");
         }
+
+        [Fact]
+        public void It_uses_the_search_space_parameters()
+        {
+            OptimiterSettings = new OptimizerSettings() {SearchSpaceMin = 0,SearchSpaceMax = 1};
+
+            Function = new Function(vector => 1/(vector[0]*vector[0] + vector[1] + vector[1]), 2);
+
+            WhenSutIsCreated();
+            WhenOpimizeIsCalled();
+
+            Assert.True(Result.Optimum.ForAll(d => OptimiterSettings.SearchSpaceMin<d && d<OptimiterSettings.SearchSpaceMax));
+        }
+
 
         private void WhenOpimizeIsCalled()
         {
