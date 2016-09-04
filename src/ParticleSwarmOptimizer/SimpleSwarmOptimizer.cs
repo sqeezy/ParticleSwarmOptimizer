@@ -39,53 +39,54 @@ namespace ParticleSwarmOptimizer
 
         public OptimizationResult Optimize()
         {
-            foreach (var particle in _particles)
+            var finishedCountdown = 10;
+            while (finishedCountdown > 0)
             {
-                var currentVelocity = particle.Velocity;
-                var ownBestGravity = _random.NextDouble()*(particle.BestPosition -
-                                                           particle.CurrentPosition);
-                var globalBestGravity = _random.NextDouble()*(GlobalBestPosition -
-                                                              particle.CurrentPosition);
-
-                var newVelocity = Omega*currentVelocity + PhiPersonal*ownBestGravity + PhiGlobal*globalBestGravity;
-
-                particle.Velocity = newVelocity;
-
-                particle.CurrentPosition = particle.CurrentPosition + particle.Velocity;
-                particle.CurrentValue = _function.GetValue(particle.CurrentPosition);
-
-                if (particle.CurrentValue < particle.BestValue)
+                finishedCountdown--;
+                foreach (var particle in _particles)
                 {
-                    particle.BestPosition = particle.CurrentPosition;
-                    particle.BestValue = particle.CurrentValue;
-                }
+                    particle.CurrentValue = _function.GetValue(particle.CurrentPosition);
+                    if (particle.CurrentValue < particle.BestValue)
+                    {
+                        particle.BestPosition = particle.CurrentPosition;
+                        particle.BestValue = particle.CurrentValue;
+                    }
 
-                if (particle.CurrentValue < GlobalBestValue)
-                {
-                    GlobalBestPosition = particle.BestPosition;
-                    GlobalBestValue = particle.BestValue;
+                    if (particle.CurrentValue < GlobalBestValue)
+                    {
+                        GlobalBestPosition = particle.BestPosition;
+                        GlobalBestValue = particle.BestValue;
+                        finishedCountdown = 10;
+                    }
+
+                    var ownBestGravity = _random.NextDouble()*(particle.BestPosition -
+                                                               particle.CurrentPosition);
+                    var globalBestGravity = _random.NextDouble()*(GlobalBestPosition -
+                                                                  particle.CurrentPosition);
+                    var currentVelocity = particle.Velocity;
+
+                    var newVelocity = Omega*currentVelocity + PhiPersonal*ownBestGravity + PhiGlobal*globalBestGravity;
+
+                    particle.Velocity = newVelocity;
+
+                    particle.CurrentPosition = particle.CurrentPosition + particle.Velocity;
                 }
             }
-
 
             return new OptimizationResult();
         }
 
         private Particle BuildSingleParticle()
         {
-            return new Particle(Vector.Build.Random(_function.Dimension), _function);
+            return new Particle(Vector.Build.Random(_function.Dimension));
         }
 
         private class Particle
         {
-            private readonly Function _function;
-
-            public Particle(Vector<double> initialPosition, Function function)
+            public Particle(Vector<double> initialPosition)
             {
-                _function = function;
                 CurrentPosition = initialPosition;
                 BestPosition = initialPosition;
-                CurrentValue = _function.GetValue(CurrentPosition);
             }
 
             public Vector<double> CurrentPosition { get; set; }
