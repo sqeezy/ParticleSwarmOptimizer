@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using MathNet.Numerics.LinearAlgebra;
 using MathNet.Numerics.LinearAlgebra.Double;
-using MathNet.Numerics.LinearAlgebra.Storage;
 
 namespace ParticleSwarmOptimizer
 {
@@ -49,12 +48,12 @@ namespace ParticleSwarmOptimizer
 
         public OptimizationResult Optimize()
         {
-            var itterations = 0;
+            var totalItterations = 0;
             var itterationsWithoutImprovement = 0;
             while (itterationsWithoutImprovement <= 100)
             {
                 itterationsWithoutImprovement++;
-                itterations++;
+                totalItterations++;
                 foreach (var particle in _particles)
                 {
                     particle.CurrentValue = _function.GetValue(particle.CurrentPosition);
@@ -71,30 +70,10 @@ namespace ParticleSwarmOptimizer
                         itterationsWithoutImprovement = 0;
                     }
 
-                    var ownBestGravity = _random.NextDouble()*(particle.BestPosition -
-                                                               particle.CurrentPosition);
-                    var globalBestGravity = _random.NextDouble()*(GlobalBestPosition -
-                                                                  particle.CurrentPosition);
-                    var currentVelocity = particle.Velocity;
+                    var newPosition = CalculateNewPosition(particle);
 
-                    var newVelocity = Omega*currentVelocity + PhiPersonal*ownBestGravity + PhiGlobal*globalBestGravity;
+                    EnforceSearchSpaceRestriction(newPosition);
 
-                    //velocity clamp possible
-                    particle.Velocity = newVelocity;
-
-                    var newPosition = particle.CurrentPosition + particle.Velocity;
-                    for (int dim = 0; dim < newPosition.Count; dim++)
-                    {
-                        var dimValue = newPosition[dim];
-                        if (dimValue < SearchSpaceMin)
-                        {
-                            newPosition[dim] = SearchSpaceMin;
-                        }
-                        if (dimValue > SearchSpaceMax)
-                        {
-                            newPosition[dim] = SearchSpaceMax;
-                        }
-                    }
                     particle.CurrentPosition = newPosition;
                 }
             }
@@ -103,8 +82,41 @@ namespace ParticleSwarmOptimizer
             {
                 Optimum = GlobalBestPosition,
                 OptimumValue = GlobalBestValue,
-                Itterations = itterations
+                Itterations = totalItterations
             };
+        }
+
+        private Vector<double> CalculateNewPosition(Particle particle)
+        {
+            var ownBestGravity = _random.NextDouble()*(particle.BestPosition -
+                                                       particle.CurrentPosition);
+            var globalBestGravity = _random.NextDouble()*(GlobalBestPosition -
+                                                          particle.CurrentPosition);
+            var currentVelocity = particle.Velocity;
+
+            var newVelocity = Omega*currentVelocity + PhiPersonal*ownBestGravity + PhiGlobal*globalBestGravity;
+
+            //velocity clamp possible
+            particle.Velocity = newVelocity;
+
+            var newPosition = particle.CurrentPosition + particle.Velocity;
+            return newPosition;
+        }
+
+        private void EnforceSearchSpaceRestriction(Vector<double> newPosition)
+        {
+            for (var dim = 0; dim < newPosition.Count; dim++)
+            {
+                var dimValue = newPosition[dim];
+                if (dimValue < SearchSpaceMin)
+                {
+                    newPosition[dim] = SearchSpaceMin;
+                }
+                if (dimValue > SearchSpaceMax)
+                {
+                    newPosition[dim] = SearchSpaceMax;
+                }
+            }
         }
 
         private Particle BuildSingleParticle()
@@ -112,10 +124,10 @@ namespace ParticleSwarmOptimizer
             return new Particle(VectorInSearchSpace(_function.Dimension));
         }
 
-        public Vector<double> VectorInSearchSpace(int dimension)
+        private Vector<double> VectorInSearchSpace(int dimension)
         {
             var vector = new DenseVector(dimension);
-            for (int i = 0; i < dimension; i++)
+            for (var i = 0; i < dimension; i++)
             {
                 vector[i] = SearchSpaceMin + (SearchSpaceMax - SearchSpaceMin)*_random.NextDouble();
             }

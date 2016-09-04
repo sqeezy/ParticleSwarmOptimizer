@@ -19,7 +19,7 @@ namespace ParticleSwarmOptimizer.Tests.Integration
             WhenSutIsCreated();
             WhenOpimizeIsCalled();
 
-            Assert.True(Result.OptimumValue < 1e-5, $"The value is {Result.OptimumValue}.");
+            Assert.True(Result.OptimumValue < 1e-2, $"The value is {Result.OptimumValue}.");
         }
 
         [Fact]
