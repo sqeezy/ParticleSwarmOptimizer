@@ -38,7 +38,10 @@ Task("Build")
     .IsDependentOn("Build")
     .Does(()=>
     {
-      XUnit2("**/bin/**/*.Tests.*.dll");
+      XUnit2("**/bin/**/*.Tests.*.dll", new XUnit2Settings
+                                            {
+                                              Parallelism = ParallelismOption.None
+                                            });
     });
 
 Task("Default")
