@@ -1,4 +1,7 @@
+#tool "nuget:?package=xunit.runner.console"
+
 var target = Argument("target", "Default");
+var solutionPath = "ParticleSwarmOptimizer.sln";
 
 Task("Clean")
   .Does(()=>
@@ -19,19 +22,26 @@ Task("Build")
   {
     if(IsRunningOnUnix())
     {
-        XBuild("ParticleSwarmOptimizer.sln",new XBuildSettings {
+        XBuild(solutionPath, new XBuildSettings {
           Configuration = "Release"
         }.WithProperty("POSIX","True"));
     }
     else
     {
-        MSBuild("ParticleSwarmOptimizer.sln", new MSBuildSettings {
+        MSBuild(solutionPath, new MSBuildSettings {
           Configuration = "Release"
         });
     }
   });
 
+  Task("Tests")
+    .IsDependentOn("Build")
+    .Does(()=>
+    {
+      XUnit2("**/bin/**/*.Tests.*.dll");
+    });
+
 Task("Default")
-  .IsDependentOn("Build");
+  .IsDependentOn("Tests");
 
 RunTarget(target);
