@@ -11,11 +11,13 @@ namespace ParticleSwarmOptimizer
         private readonly Function _function;
         private readonly IEnumerable<Particle> _particles;
         private readonly Random _random;
+        private readonly int _seed;
 
-        public SimpleSwarmOptimizer(Function function, OptimizerSettings settings)
+        public SimpleSwarmOptimizer(Function function, OptimizerSettings settings, int seed = 0)
         {
-            _random = new Random();
+            _random = new Random(seed);
             _function = function;
+            _seed = seed;
 
             Omega = settings.Omega;
             PhiGlobal = settings.PhiGlobal;
@@ -39,10 +41,12 @@ namespace ParticleSwarmOptimizer
 
         public OptimizationResult Optimize()
         {
-            var finishedCountdown = 10;
-            while (finishedCountdown > 0)
+            var itterations = 0;
+            var itterationsWithoutImprovement = 0;
+            while (itterationsWithoutImprovement <= 100)
             {
-                finishedCountdown--;
+                itterationsWithoutImprovement++;
+                itterations++;
                 foreach (var particle in _particles)
                 {
                     particle.CurrentValue = _function.GetValue(particle.CurrentPosition);
@@ -56,7 +60,7 @@ namespace ParticleSwarmOptimizer
                     {
                         GlobalBestPosition = particle.BestPosition;
                         GlobalBestValue = particle.BestValue;
-                        finishedCountdown = 10;
+                        itterationsWithoutImprovement = 0;
                     }
 
                     var ownBestGravity = _random.NextDouble()*(particle.BestPosition -
@@ -73,7 +77,12 @@ namespace ParticleSwarmOptimizer
                 }
             }
 
-            return new OptimizationResult();
+            return new OptimizationResult
+            {
+                Optimum = GlobalBestPosition,
+                OptimumValue = GlobalBestValue,
+                Itterations = itterations
+            };
         }
 
         private Particle BuildSingleParticle()
@@ -87,13 +96,17 @@ namespace ParticleSwarmOptimizer
             {
                 CurrentPosition = initialPosition;
                 BestPosition = initialPosition;
+                Velocity = new DenseVector(new double[initialPosition.Count]);
             }
 
             public Vector<double> CurrentPosition { get; set; }
             public Vector<double> BestPosition { get; set; }
-            public double CurrentValue { get; set; }
-            public double BestValue { get; set; }
+            public double CurrentValue { get; set; } = double.MaxValue;
+            public double BestValue { get; set; } = double.MaxValue;
             public Vector<double> Velocity { get; set; }
+
+            public override string ToString()
+                => $"Current: {CurrentPosition} => {CurrentValue} | Best: {BestPosition} => {BestValue}";
         }
     }
 }
