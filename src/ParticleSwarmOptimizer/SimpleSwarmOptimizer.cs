@@ -11,13 +11,11 @@ namespace ParticleSwarmOptimizer
         private readonly Function _function;
         private readonly IEnumerable<Particle> _particles;
         private readonly Random _random;
-        private readonly int _seed;
 
         public SimpleSwarmOptimizer(Function function, OptimizerSettings settings, int seed = 0)
         {
             _random = new Random(seed);
             _function = function;
-            _seed = seed;
 
             Omega = settings.Omega;
             PhiGlobal = settings.PhiGlobal;
