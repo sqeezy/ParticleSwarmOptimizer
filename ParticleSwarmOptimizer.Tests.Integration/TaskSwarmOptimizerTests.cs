@@ -2,10 +2,10 @@
 
 namespace ParticleSwarmOptimizer.Tests.Integration
 {
-    public class SimpleSwarmOptimizerTests
+    public class TaskSwarmOptimizerTests
     {
         private OptimizationResult Result { get; set; }
-        private SimpleSwarmOptimizer Sut { get; set; }
+        private TaskSwarmOptimizer Sut { get; set; }
         private OptimizerSettings OptimiterSettings { get; set; }
         private Function Function { get; set; }
 
@@ -35,7 +35,7 @@ namespace ParticleSwarmOptimizer.Tests.Integration
             WhenOpimizeIsCalled();
 
             Assert.True(
-                Result.Optimum.ForAll(d => OptimiterSettings.SearchSpaceMin < d && d < OptimiterSettings.SearchSpaceMax),
+                Result.Optimum.ForAll(d => OptimiterSettings.SearchSpaceMin <= d && d <= OptimiterSettings.SearchSpaceMax),
                 $"Some positions in the result vector ({Result.Optimum}) are not in the search space.");
         }
 
@@ -46,7 +46,7 @@ namespace ParticleSwarmOptimizer.Tests.Integration
 
         private void WhenSutIsCreated()
         {
-            Sut = new SimpleSwarmOptimizer(Function, OptimiterSettings);
+            Sut = new TaskSwarmOptimizer(Function, OptimiterSettings);
         }
     }
 }
