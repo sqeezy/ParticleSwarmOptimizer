@@ -6,7 +6,8 @@ var solutionPath = "ParticleSwarmOptimizer.sln";
 Task("Clean")
   .Does(()=>
   {
-    CleanDirectories("bin/**");
+    CleanDirectories("./**/bin/**");
+    CleanDirectories("./**/obj/**");
   });
 
 Task("NuGetRestore")
@@ -38,10 +39,7 @@ Task("Build")
     .IsDependentOn("Build")
     .Does(()=>
     {
-      XUnit2("**/bin/**/*.Tests.*.dll", new XUnit2Settings
-                                            {
-                                              Parallelism = ParallelismOption.None
-                                            });
+      XUnit2("test/**/bin/Release/*.Tests.*.dll");
     });
 
 Task("Default")

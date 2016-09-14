@@ -5,7 +5,7 @@ VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParticleSwarmOptimizer", "src\ParticleSwarmOptimizer\ParticleSwarmOptimizer.csproj", "{BA576DD0-CC38-4B45-9239-9613E104162A}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParticleSwarmOptimizer.Tests.Integration", "ParticleSwarmOptimizer.Tests.Integration\ParticleSwarmOptimizer.Tests.Integration.csproj", "{0F89F364-005D-4BAC-A906-5D8350587044}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParticleSwarmOptimizer.Tests.Integration", "test\ParticleSwarmOptimizer.Tests.Integration\ParticleSwarmOptimizer.Tests.Integration.csproj", "{0F89F364-005D-4BAC-A906-5D8350587044}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
