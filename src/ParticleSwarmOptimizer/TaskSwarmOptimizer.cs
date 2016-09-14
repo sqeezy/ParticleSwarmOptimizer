@@ -36,10 +36,17 @@ namespace ParticleSwarmOptimizer
         private IEnumerable<Particle> CreateEvenlyDistributedParticlesInSubspaces(Function function,
                                                                                   IEnumerable<SearchSpace> searchSpaces)
         {
-            return
-                searchSpaces.SelectMany(
-                    searchSpace =>
-                    Enumerable.Range(0, (int) Math.Pow(2, function.Dimension)).Select(_ => CreateParticle(searchSpace)));
+            var particles = new List<Particle>();
+            var particlePerSpace = (int) Math.Pow(2, function.Dimension);
+            var spaces = searchSpaces as SearchSpace[] ?? searchSpaces.ToArray();
+            foreach (var searchSpace in spaces)
+            {
+                for (var i = 0; i < particlePerSpace; i++)
+                {
+                    particles.Add(CreateParticle(searchSpace));
+                }
+            }
+            return particles;
         }
 
         private Particle CreateParticle(SearchSpace searchSpace)
@@ -153,9 +160,11 @@ namespace ParticleSwarmOptimizer
 
                 SearchSpaceMin = settings.SearchSpacesMin;
                 SearchSpaceMax = settings.SearchSpacesMax;
-                CurrentPosition = EnforceSearchSpaceRestriction(initialPosition);
-                BestPosition = EnforceSearchSpaceRestriction(initialPosition);
+                CurrentPosition = initialPosition;
+                BestPosition = initialPosition;
                 Velocity = new DenseVector(new double[initialPosition.Count]);
+
+                UpdatePosition();
             }
 
             private double SearchSpaceMax { get; }
@@ -185,6 +194,7 @@ namespace ParticleSwarmOptimizer
 
             private void UpdatePosition()
             {
+                EnforceSearchSpaceRestriction(CurrentPosition);
                 CurrentValue = _function.GetValue(CurrentPosition);
                 if (CurrentValue < BestValue)
                 {
@@ -199,8 +209,6 @@ namespace ParticleSwarmOptimizer
                 }
 
                 var newPosition = CalculateNewPosition(this);
-
-                EnforceSearchSpaceRestriction(newPosition);
 
                 CurrentPosition = newPosition;
             }
