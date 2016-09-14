@@ -2,7 +2,7 @@
 {
     public class OptimizerSettings
     {
-        public int ParticleCount { get; set; } = 30;
+        public int ParticleCount { get; set; } = 20;
 
         public int MaxRepetitions { get; } = 3;
 

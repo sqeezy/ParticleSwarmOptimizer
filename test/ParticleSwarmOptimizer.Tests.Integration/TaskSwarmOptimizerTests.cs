@@ -14,7 +14,7 @@ namespace ParticleSwarmOptimizer.Tests.Integration
         [Fact]
         public void It_finds_the_minimum_of_a_parabola()
         {
-            OptimiterSettings = new OptimizerSettings();
+            OptimiterSettings = new OptimizerSettings() {SearchSpacesMin = 0, SearchSpacesMax = 1};
 
             //f(x) = x²
             Function = new Function(vector => vector[0]*vector[0], 1);
