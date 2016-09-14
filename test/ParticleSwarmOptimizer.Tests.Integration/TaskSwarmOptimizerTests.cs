@@ -45,7 +45,7 @@ namespace ParticleSwarmOptimizer.Tests.Integration
         [Fact]
         public void It_finds_the_minimum_in_the_rosenbrock_function_in_R2()
         {
-            OptimiterSettings = new OptimizerSettings {SearchSpacesMin = -1, SearchSpacesMax = 1, ParticleCount = 100};
+            OptimiterSettings = new OptimizerSettings {SearchSpacesMin = -1, SearchSpacesMax = 1, ParticleCount = 25};
 
             //f(x,y) = (1-x)² + 100(y-x²)²
             Function = new Function(vector =>
