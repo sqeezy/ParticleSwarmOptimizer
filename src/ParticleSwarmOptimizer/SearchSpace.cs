@@ -4,7 +4,7 @@ using System.Linq;
 namespace ParticleSwarmOptimizer
 {
     /// <summary>
-    /// This class is used to generate distributed search spaces in a global space.
+    ///     This class is used to generate distributed search spaces in a global space.
     /// </summary>
     public class SearchSpace
     {

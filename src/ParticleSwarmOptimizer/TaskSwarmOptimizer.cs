@@ -119,10 +119,6 @@ namespace ParticleSwarmOptimizer
                 }
                 lock (_lock)
                 {
-                    if (bestPositionProposition.Any(d => d < 0))
-                    {
-                        throw new Exception();
-                    }
                     FailedUpdatesCounter = 0;
 
                     UpdateCountTotal++;
