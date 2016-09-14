@@ -9,90 +9,126 @@ namespace ParticleSwarmOptimizer
 {
     public class TaskSwarmOptimizer
     {
-        private readonly AbortFlag _abortFlag;
-        private readonly GlobalState _globalState;
-        private readonly IEnumerable<Particle> _particles;
+        private readonly Function _function;
         private readonly Random _random;
         private readonly OptimizerSettings _settings;
+        private AbortFlag _abortFlag;
+        private IEnumerable<Particle> _particles;
+        private SharedState _sharedState;
 
         public TaskSwarmOptimizer(Function function, OptimizerSettings optimiterSettings, int seed = 0)
         {
             _random = new Random(seed);
+            _function = function;
             _settings = optimiterSettings;
-
-            _globalState = new GlobalState();
-            _abortFlag = new AbortFlag();
-
-            _particles = Enumerable.Range(0, 20)
-                .Select(_ => CreateParticle(function, optimiterSettings, _globalState, _abortFlag));
         }
 
-        private Particle CreateParticle(Function function, OptimizerSettings optimiterSettings, GlobalState globalState,
-            AbortFlag abortFlag)
+        private void InitParticles()
         {
-            return new Particle(VectorInSearchSpace(function.Dimension),
-                globalState,
-                abortFlag,
-                function,
-                _random,
-                optimiterSettings);
+            var searchSpaces = SearchSpace.GenerateSubSpaces(2,
+                                                             _function.Dimension,
+                                                             _settings.SearchSpacesMin,
+                                                             _settings.SearchSpacesMax);
+
+            _particles = CreateEvenlyDistributedParticlesInSubspaces(_function, searchSpaces);
         }
 
-
-        public OptimizationResult Optimize()
+        private IEnumerable<Particle> CreateEvenlyDistributedParticlesInSubspaces(Function function,
+                                                                                  IEnumerable<SearchSpace> searchSpaces)
         {
-            var tasks = _particles.Select(particle => particle.StartSearch()).ToArray();
-
-            while (true)
-            {
-                if (DateTime.Now - _globalState.LastUpdate > TimeSpan.FromSeconds(1))
-                {
-                    _abortFlag.Abort = true;
-                    break;
-                }
-                Task.Delay(1000);
-            }
-
-            Task.WaitAll(tasks);
-
-            return new OptimizationResult
-            {
-                Optimum = _globalState.GlobalBestPosition,
-                OptimumValue = _globalState.GlobalBestValue
-            };
+            return
+                searchSpaces.SelectMany(
+                    searchSpace =>
+                    Enumerable.Range(0, (int) Math.Pow(2, function.Dimension)).Select(_ => CreateParticle(searchSpace)));
         }
 
-        private Vector<double> VectorInSearchSpace(int dimension)
+        private Particle CreateParticle(SearchSpace searchSpace)
         {
-            var vector = new DenseVector(dimension);
-            for (var i = 0; i < dimension; i++)
+            return new Particle(VectorInSearchSpace(searchSpace),
+                                _sharedState,
+                                _abortFlag,
+                                _function,
+                                _random,
+                                _settings);
+        }
+
+        private Vector<double> VectorInSearchSpace(SearchSpace space)
+        {
+            var vector = new DenseVector(_function.Dimension);
+            for (var i = 0; i < _function.Dimension; i++)
             {
-                vector[i] = _settings.SearchSpaceMin +
-                            (_settings.SearchSpaceMax - _settings.SearchSpaceMin)*_random.NextDouble();
+                vector[i] = space.MinPerDim[i] + (space.MaxPerDim[i] - space.MinPerDim[i])*_random.NextDouble();
             }
             return vector;
         }
 
-        private class GlobalState
+        public OptimizationResult Optimize()
+        {
+            var results = new List<OptimizationResult>();
+            for (var i = 0; i < _settings.MaxRepetitions; i++)
+            {
+                results.Add(SingleOptimization());
+            }
+            return results.OrderBy(result => result.OptimumValue).First();
+        }
+
+        private OptimizationResult SingleOptimization()
+        {
+            _sharedState = new SharedState();
+            _abortFlag = new AbortFlag();
+
+            InitParticles();
+            var start = DateTime.Now;
+            var tasks = _particles.Select(particle => particle.StartSearch()).ToArray();
+
+            while (true)
+            {
+                if (_sharedState.FailedUpdatesCounter > 10000)
+                {
+                    _abortFlag.Abort = true;
+                    break;
+                }
+            }
+
+            Task.WaitAll(tasks);
+
+            var totalTime = DateTime.Now - start;
+
+            return new OptimizationResult
+                   {
+                       Optimum = _sharedState.GlobalBestPosition,
+                       OptimumValue = _sharedState.GlobalBestValue,
+                       UpdateCountTotal = _sharedState.UpdateCountTotal,
+                       OptimizationTime = totalTime
+                   };
+        }
+
+        private class SharedState
         {
             private readonly object _lock = new object();
             public Vector<double> GlobalBestPosition { get; private set; }
             public double GlobalBestValue { get; private set; } = double.MaxValue;
-            public DateTime LastUpdate { get; private set; } = DateTime.Now;
-            public int UpdateCount { get; private set; }
+            public int UpdateCountTotal { get; private set; }
+            public int FailedUpdatesCounter { get; set; }
 
-            public void SetValues(Vector<double> bestPosition, double bestValue)
+            public void SetValues(Vector<double> bestPositionProposition, double bestValueProposition)
             {
-                if (bestValue > GlobalBestValue)
+                if (bestValueProposition > GlobalBestValue)
                 {
                     return;
                 }
                 lock (_lock)
                 {
-                    GlobalBestPosition = bestPosition;
-                    GlobalBestValue = bestValue;
-                    LastUpdate = DateTime.Now;
-                    UpdateCount++;
+                    if (bestPositionProposition.Any(d => d < 0))
+                    {
+                        throw new Exception();
+                    }
+                    FailedUpdatesCounter = 0;
+
+                    UpdateCountTotal++;
+
+                    GlobalBestPosition = bestPositionProposition;
+                    GlobalBestValue = bestValueProposition;
                 }
             }
         }
@@ -101,13 +137,17 @@ namespace ParticleSwarmOptimizer
         {
             private readonly AbortFlag _abortFlag;
             private readonly Function _function;
-            private readonly GlobalState _globalState;
             private readonly Random _random;
+            private readonly SharedState _sharedState;
 
-            public Particle(Vector<double> initialPosition, GlobalState globalState, AbortFlag abortFlag,
-                Function function, Random random, OptimizerSettings settings)
+            public Particle(Vector<double> initialPosition,
+                            SharedState sharedState,
+                            AbortFlag abortFlag,
+                            Function function,
+                            Random random,
+                            OptimizerSettings settings)
             {
-                _globalState = globalState;
+                _sharedState = sharedState;
                 _abortFlag = abortFlag;
                 _function = function;
                 _random = random;
@@ -115,10 +155,10 @@ namespace ParticleSwarmOptimizer
                 PhiGlobal = settings.PhiGlobal;
                 PhiPersonal = settings.PhiPersonal;
 
-                SearchSpaceMin = settings.SearchSpaceMin;
-                SearchSpaceMax = settings.SearchSpaceMax;
-                CurrentPosition = initialPosition;
-                BestPosition = initialPosition;
+                SearchSpaceMin = settings.SearchSpacesMin;
+                SearchSpaceMax = settings.SearchSpacesMax;
+                CurrentPosition = EnforceSearchSpaceRestriction(initialPosition);
+                BestPosition = EnforceSearchSpaceRestriction(initialPosition);
                 Velocity = new DenseVector(new double[initialPosition.Count]);
             }
 
@@ -156,9 +196,10 @@ namespace ParticleSwarmOptimizer
                     BestValue = CurrentValue;
                 }
 
-                if (CurrentValue < _globalState.GlobalBestValue)
+                _sharedState.FailedUpdatesCounter++;
+                if (CurrentValue < _sharedState.GlobalBestValue)
                 {
-                    _globalState.SetValues(BestPosition, BestValue);
+                    _sharedState.SetValues(BestPosition, BestValue);
                 }
 
                 var newPosition = CalculateNewPosition(this);
@@ -170,10 +211,9 @@ namespace ParticleSwarmOptimizer
 
             private Vector<double> CalculateNewPosition(Particle particle)
             {
-                var ownBestGravity = _random.NextDouble()*(particle.BestPosition -
-                                                           particle.CurrentPosition);
-                var globalBestGravity = _random.NextDouble()*(_globalState.GlobalBestPosition -
-                                                              particle.CurrentPosition);
+                var ownBestGravity = _random.NextDouble()*(particle.BestPosition - particle.CurrentPosition);
+                var globalBestGravity = _random.NextDouble()*
+                                        (_sharedState.GlobalBestPosition - particle.CurrentPosition);
                 var currentVelocity = particle.Velocity;
 
                 var newVelocity = Omega*currentVelocity + PhiPersonal*ownBestGravity + PhiGlobal*globalBestGravity;
@@ -185,7 +225,7 @@ namespace ParticleSwarmOptimizer
                 return newPosition;
             }
 
-            private void EnforceSearchSpaceRestriction(Vector<double> newPosition)
+            private Vector<double> EnforceSearchSpaceRestriction(Vector<double> newPosition)
             {
                 for (var dim = 0; dim < newPosition.Count; dim++)
                 {
@@ -199,10 +239,12 @@ namespace ParticleSwarmOptimizer
                         newPosition[dim] = SearchSpaceMax;
                     }
                 }
+                return newPosition;
             }
 
             public override string ToString()
-                => $"Current: {CurrentPosition} => {CurrentValue} | Best: {BestPosition} => {BestValue}";
+                =>
+                    $"Current: {CurrentPosition.Readable()} => {CurrentValue} | Best: {BestPosition.Readable()} => {BestValue}";
         }
 
         private class AbortFlag

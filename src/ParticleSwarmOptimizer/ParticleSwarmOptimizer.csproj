@@ -38,8 +38,10 @@
     <Compile Include="OptimizationResult.cs" />
     <Compile Include="OptimizerSettings.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SearchSpace.cs" />
     <Compile Include="SimpleSwarmOptimizer.cs" />
     <Compile Include="TaskSwarmOptimizer.cs" />
+    <Compile Include="Extensions.cs" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="MathNet.Numerics, Version=3.12.0.0, Culture=neutral, processorArchitecture=MSIL">

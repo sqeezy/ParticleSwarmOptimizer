@@ -1,4 +1,6 @@
-﻿using Xunit;
+﻿using System.Collections.Generic;
+using Xunit;
+using static System.Environment;
 
 namespace ParticleSwarmOptimizer.Tests.Integration
 {
@@ -26,17 +28,50 @@ namespace ParticleSwarmOptimizer.Tests.Integration
         [Fact]
         public void It_uses_the_search_space_parameters()
         {
-            OptimiterSettings = new OptimizerSettings {SearchSpaceMin = 0, SearchSpaceMax = 1};
+            OptimiterSettings = new OptimizerSettings {SearchSpacesMin = 0, SearchSpacesMax = 1};
 
-            //f(x,y) = 1/(x²+y²)
-            Function = new Function(vector => 1/(vector[0]*vector[0] + vector[1] + vector[1]), 2);
+            //f(x,y) = (x²+y²)-1
+            Function = new Function(vector => (vector[0]*vector[0] + vector[1] + vector[1])-1, 2);
 
             WhenSutIsCreated();
             WhenOpimizeIsCalled();
 
             Assert.True(
-                Result.Optimum.ForAll(d => OptimiterSettings.SearchSpaceMin <= d && d <= OptimiterSettings.SearchSpaceMax),
+                Result.Optimum.ForAll(
+                    d => OptimiterSettings.SearchSpacesMin <= d && d <= OptimiterSettings.SearchSpacesMax),
                 $"Some positions in the result vector ({Result.Optimum}) are not in the search space.");
+        }
+
+        [Fact]
+        public void It_finds_the_minimum_in_the_rosenbrock_function()
+        {
+            OptimiterSettings = new OptimizerSettings {SearchSpacesMin = -1.5, SearchSpacesMax = 3, ParticleCount = 100};
+
+            //f(x,y) = (1-x)² + 100(y-x²)²
+            Function = new Function(vector =>
+                                    {
+                                        var x = vector[0];
+                                        var y = vector[1];
+                                        return (1 - x)*(1 - x) + 100*(y - x*x)*(y - x*x);
+                                    },
+                                    2);
+
+            var results = new List<OptimizationResult>();
+
+            for (var i = 0; i < 200; i++)
+            {
+                WhenSutIsCreated();
+                WhenOpimizeIsCalled();
+                results.Add(Result);
+            }
+
+            foreach (var optimizationResult in results)
+            {
+                Assert.True(optimizationResult.OptimumValue < 1e-5,
+                            $"{NewLine}" + $"Value:    {optimizationResult.OptimumValue}{NewLine}" +
+                            $"Position: {optimizationResult.Optimum}{NewLine}" +
+                            $"Updates: {optimizationResult.UpdateCountTotal}{NewLine}");
+            }
         }
 
         private void WhenOpimizeIsCalled()

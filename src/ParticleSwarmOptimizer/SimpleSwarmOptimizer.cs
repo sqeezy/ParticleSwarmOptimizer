@@ -21,8 +21,8 @@ namespace ParticleSwarmOptimizer
             PhiGlobal = settings.PhiGlobal;
             PhiPersonal = settings.PhiPersonal;
 
-            SearchSpaceMin = settings.SearchSpaceMin;
-            SearchSpaceMax = settings.SearchSpaceMax;
+            SearchSpaceMin = settings.SearchSpacesMin;
+            SearchSpaceMax = settings.SearchSpacesMax;
 
             _particles = Enumerable.Range(0, settings.ParticleCount).Select(_ => BuildSingleParticle());
 
@@ -77,19 +77,17 @@ namespace ParticleSwarmOptimizer
             }
 
             return new OptimizationResult
-            {
-                Optimum = GlobalBestPosition,
-                OptimumValue = GlobalBestValue,
-                Itterations = totalItterations
-            };
+                   {
+                       Optimum = GlobalBestPosition,
+                       OptimumValue = GlobalBestValue,
+                       Itterations = totalItterations
+                   };
         }
 
         private Vector<double> CalculateNewPosition(Particle particle)
         {
-            var ownBestGravity = _random.NextDouble()*(particle.BestPosition -
-                                                       particle.CurrentPosition);
-            var globalBestGravity = _random.NextDouble()*(GlobalBestPosition -
-                                                          particle.CurrentPosition);
+            var ownBestGravity = _random.NextDouble()*(particle.BestPosition - particle.CurrentPosition);
+            var globalBestGravity = _random.NextDouble()*(GlobalBestPosition - particle.CurrentPosition);
             var currentVelocity = particle.Velocity;
 
             var newVelocity = Omega*currentVelocity + PhiPersonal*ownBestGravity + PhiGlobal*globalBestGravity;
